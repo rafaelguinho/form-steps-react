@@ -2,29 +2,30 @@ import React, { useEffect, useState } from 'react';
 import Select from 'react-select';
 import { getBrands } from '../../services/brands';
 import { getVehicles } from '../../services/vehicles';
+import useAsync  from "../../hooks/useAsync";
+import REQUEST_STATUS from '../../consts/requestStatus';
 
 function Step2(){
     const [radio, setRadio] = useState("");
 
-    const [brands, setBrands] = useState(null);
     const [selectedBrand, setSelectedBrand] = useState(null);
 
     const [vehicles, setVehicles] = useState(null);
     const [selectedVehicle, setSelectedVehicle] = useState(null);
 
-    const vehicleType = 'carros';
+    const { status, error, data: brands, runPromise } = useAsync({
+        status: REQUEST_STATUS.IDLE,
+      });
 
+    const vehicleType = 'carros';
+//let brands = data.map(x => ({value: x.id, label: x.name}));
       useEffect(() => {
 
-        if(!brands){
-            getBrands(vehicleType)
-            .then(data => {
-                let brands = data.map(x => ({value: x.id, label: x.name}));
-                setBrands(brands);
-            });
-        }
+        if(brands) return;
+
+        return runPromise(getBrands(vehicleType));
         
-      });
+      }, [brands, runPromise]);
 
       const vehicleBrandChanged = (e) => {
         
@@ -52,18 +53,20 @@ function Step2(){
                 <input type="radio" value="no" checked={radio === 'no'} onChange={(e) => setRadio(e.target.value)}/>
             </label>
 
-            <Select
+
+             <Select
                 value={selectedBrand}
                 onChange={vehicleBrandChanged}
-                options={brands}
+                options={status == REQUEST_STATUS.RESOLVED ? brands.map(x => ({value: x.id, label: x.name})) : []}
+                isDisabled={status != REQUEST_STATUS.RESOLVED}
             />
 
-            <Select
+            {/*<Select
                 value={selectedVehicle}
                 onChange={vehicleChanged}
                 options={vehicles}
                 isDisabled={!vehicles}
-            />
+            /> */}
 
         </form>
     );
